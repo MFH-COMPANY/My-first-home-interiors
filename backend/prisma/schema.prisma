@@ -1,0 +1,337 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+enum PublicationStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+enum BookingStatus {
+  REQUESTED
+  CONFIRMED
+  RESCHEDULED
+  CANCELLED
+  COMPLETED
+}
+enum EnquiryStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+  ARCHIVED
+}
+enum UploadKind {
+  ROOM_IMAGE
+  ROOM_VIDEO
+  PROJECT_MEDIA
+  KNOWLEDGE_ASSET
+}
+enum JobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id String @id @default(cuid())
+  email String @unique
+  passwordHash String
+  role UserRole @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  profile CustomerProfile?
+  admin Admin?
+  sessions Session[]
+  enquiries Enquiry[]
+  bookings ConsultationBooking[]
+  chatSessions ChatSession[]
+  roomUploads RoomUpload[]
+  savedDesigns SavedDesign[]
+  @@index([role])
+}
+model CustomerProfile {
+  id String @id @default(cuid())
+  userId String @unique
+  name String?
+  phone String?
+  location String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+model Admin {
+  id String @id @default(cuid())
+  userId String @unique
+  displayName String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedEnquiries Enquiry[]
+  assignedBookings ConsultationBooking[]
+}
+model Session {
+  id String @id @default(cuid())
+  userId String
+  tokenHash String
+  refreshTokenHash String
+  expiresAt DateTime
+  refreshExpiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, revokedAt])
+}
+model Service {
+  id String @id @default(cuid())
+  name String @unique
+  slug String @unique
+  description String
+  status PublicationStatus @default(PUBLISHED)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  projects Project[]
+}
+model Project {
+  id String @id @default(cuid())
+  name String
+  slug String @unique
+  location String
+  propertyType String
+  area String
+  designStyle String
+  description String
+  roomDetails Json?
+  materials Json?
+  furniture Json?
+  status PublicationStatus @default(DRAFT)
+  coverImageUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  media ProjectMedia[]
+  services Service[]
+  bookings ConsultationBooking[]
+  @@index([status, propertyType])
+  @@index([designStyle])
+  @@index([location])
+}
+model ProjectMedia {
+  id String @id @default(cuid())
+  projectId String
+  kind String
+  room String?
+  url String
+  storageKey String?
+  altText String?
+  sortOrder Int @default(0)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  @@index([projectId, room, sortOrder])
+}
+model CatalogueCategory {
+  id String @id @default(cuid())
+  name String @unique
+  slug String @unique
+  products CatalogueProduct[]
+}
+model CatalogueProduct {
+  id String @id @default(cuid())
+  categoryId String
+  name String
+  sku String @unique
+  description String
+  material String?
+  colour String?
+  finish String?
+  dimensions String?
+  availability String?
+  supplier String?
+  tags Json?
+  priceCents Int?
+  currency String @default("INR")
+  status PublicationStatus @default(DRAFT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  category CatalogueCategory @relation(fields: [categoryId], references: [id])
+  materials Material[]
+  designs DesignProduct[]
+  images CatalogueProductImage[]
+  @@index([categoryId, status])
+}
+model CatalogueProductImage {
+  id String @id @default(cuid())
+  productId String
+  url String
+  altText String?
+  sortOrder Int @default(0)
+  product CatalogueProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  @@index([productId, sortOrder])
+}
+model Material {
+  id String @id @default(cuid())
+  name String
+  type String
+  description String
+  priceCents Int?
+  products CatalogueProduct[]
+  createdAt DateTime @default(now())
+  @@index([type])
+}
+model PricingPackage {
+  id String @id @default(cuid())
+  name String
+  description String
+  minPriceCents Int?
+  maxPriceCents Int?
+  currency String @default("INR")
+  status PublicationStatus @default(PUBLISHED)
+  createdAt DateTime @default(now())
+}
+model Enquiry {
+  id String @id @default(cuid())
+  userId String?
+  assignedAdminId String?
+  name String
+  email String
+  phone String?
+  message String
+  source String @default("website")
+  status EnquiryStatus @default(NEW)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  assignedAdmin Admin? @relation(fields: [assignedAdminId], references: [id], onDelete: SetNull)
+  @@index([email, createdAt])
+  @@index([status, createdAt])
+  @@index([assignedAdminId, status])
+}
+model ConsultationBooking {
+  id String @id @default(cuid())
+  userId String?
+  projectId String?
+  assignedAdminId String?
+  name String
+  email String
+  phone String
+  preferredAt DateTime
+  propertyType String?
+  location String?
+  notes String?
+  status BookingStatus @default(REQUESTED)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  assignedAdmin Admin? @relation(fields: [assignedAdminId], references: [id], onDelete: SetNull)
+  @@index([preferredAt, status])
+  @@index([email])
+  @@index([assignedAdminId, status])
+}
+model ChatSession {
+  id String @id @default(cuid())
+  userId String?
+  createdAt DateTime @default(now())
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  messages ChatMessage[]
+}
+model ChatMessage {
+  id String @id @default(cuid())
+  sessionId String
+  role String
+  content String
+  createdAt DateTime @default(now())
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  @@index([sessionId, createdAt])
+}
+model RoomUpload {
+  id String @id @default(cuid())
+  userId String
+  kind UploadKind
+  storageKey String
+  mimeType String
+  byteSize Int
+  consentAt DateTime
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analysis RoomAnalysis?
+  @@index([userId, createdAt])
+}
+model RoomAnalysis {
+  id String @id @default(cuid())
+  roomUploadId String @unique
+  status JobStatus @default(QUEUED)
+  roomType String?
+  observations Json?
+  uncertainty Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  roomUpload RoomUpload @relation(fields: [roomUploadId], references: [id], onDelete: Cascade)
+  generations DesignGeneration[]
+}
+model DesignGeneration {
+  id String @id @default(cuid())
+  analysisId String
+  status JobStatus @default(QUEUED)
+  provider String?
+  errorMessage String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  analysis RoomAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  designs GeneratedDesign[]
+  @@index([status, createdAt])
+}
+model GeneratedDesign {
+  id String @id @default(cuid())
+  generationId String
+  name String
+  description String
+  imageUrl String?
+  isConceptual Boolean @default(true)
+  createdAt DateTime @default(now())
+  generation DesignGeneration @relation(fields: [generationId], references: [id], onDelete: Cascade)
+  products DesignProduct[]
+  savedBy SavedDesign[]
+}
+model DesignProduct {
+  designId String
+  productId String
+  design GeneratedDesign @relation(fields: [designId], references: [id], onDelete: Cascade)
+  product CatalogueProduct @relation(fields: [productId], references: [id], onDelete: Restrict)
+  @@id([designId, productId])
+}
+model SavedDesign {
+  id String @id @default(cuid())
+  userId String
+  designId String
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  design GeneratedDesign @relation(fields: [designId], references: [id], onDelete: Cascade)
+  @@unique([userId, designId])
+}
+model KnowledgeDocument {
+  id String @id @default(cuid())
+  title String
+  content String
+  source String
+  embedding Json?
+  status PublicationStatus @default(PUBLISHED)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([status])
+}
+model AuditLog {
+  id String @id @default(cuid())
+  actorUserId String?
+  action String
+  entity String
+  entityId String?
+  metadata Json?
+  createdAt DateTime @default(now())
+  @@index([actorUserId, createdAt])
+}
