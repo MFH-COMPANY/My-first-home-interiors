@@ -22,6 +22,8 @@ NestJS + Prisma + PostgreSQL backend for the existing Vite frontend.
 6. Seed the catalogue: `npm run prisma:seed`.
 7. Start the API: `npm run start:dev`.
 
+For the AI assistant, enable the `vector` PostgreSQL extension and apply migration `0003_ai_knowledge_pgvector` with `npm run prisma:deploy`. Set `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_EMBEDDING_MODEL`, and `OPENAI_TIMEOUT_MS` in `.env`. Knowledge documents are chunked and embedded on creation or reindexing; only published chunks, published catalogue products, and published projects are supplied to the model.
+
 The API is served under `/api` and defaults to port `4000`.
 
 ## API surface
@@ -47,6 +49,8 @@ The API is served under `/api` and defaults to port `4000`.
 - `GET|POST /api/admin/projects` and `PATCH /api/admin/projects/:id` (ADMIN)
 - `GET|POST /api/admin/catalogue` and `PATCH /api/admin/catalogue/:id` (ADMIN)
 - `GET|POST /api/admin/knowledge` and `GET /api/admin/audit-logs` (ADMIN)
+- `POST /api/admin/knowledge/:id/reindex` and `DELETE /api/admin/knowledge/:id` (ADMIN)
+- `POST /api/chat/sessions`, `GET /api/chat/sessions`, `GET /api/chat/sessions/:id`, `POST /api/chat/messages` (customer Bearer token)
 - `POST /api/uploads/admin` (ADMIN, multipart `file`, `entity`, `entityId`)
 
 Project, catalogue, booking, and customer APIs should be expanded from the same Prisma models as the corresponding frontend flows are connected. No endpoint returns a fabricated persistence success: writes go through Prisma and surface database/storage failures.
@@ -64,3 +68,7 @@ Run `npm run prisma:seed` after migration to create the requested catalogue taxo
 - Access tokens are bound to hashed database sessions; refresh tokens are rotated and revoked on use.
 - Booking confirmation/rescheduling runs at serializable transaction isolation and rechecks confirmed slots.
 - Configure a real content-signature scanner before accepting untrusted production uploads; the current boundary validates declared MIME, size and authenticated ownership but does not yet inspect magic bytes.
+
+## Real AI smoke test
+
+The assistant requires an authenticated customer access token. Register or log in through `/api/auth/register` or `/api/auth/login`, store the returned access token, then call `/api/chat/messages` with `{"message":"Help me choose a living room sofa"}` and the header `Authorization: Bearer <token>`. A successful response contains a persisted assistant message and only database-backed `products`/`projects`. Without a configured key, the endpoint returns a clear `503` and does not fabricate an answer.

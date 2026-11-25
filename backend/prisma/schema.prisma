@@ -332,11 +332,23 @@ model KnowledgeDocument {
   title String
   content String
   source String
-  embedding Json?
   status PublicationStatus @default(PUBLISHED)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@index([status])
+  chunks KnowledgeChunk[]
+}
+model KnowledgeChunk {
+  id String @id @default(cuid())
+  documentId String
+  content String
+  chunkIndex Int
+  embedding Unsupported("vector(1536)")?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  document KnowledgeDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  @@unique([documentId, chunkIndex])
+  @@index([documentId])
 }
 model AuditLog {
   id String @id @default(cuid())

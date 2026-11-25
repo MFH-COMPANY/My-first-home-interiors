@@ -78,7 +78,6 @@ export class AdminController {
   }
 
   @Get('knowledge') knowledge() { return this.prisma.knowledgeDocument.findMany({ orderBy: { updatedAt: 'desc' } }); }
-  @Post('knowledge') async createKnowledge(@Body() body: { title: string; content: string; source?: string }, @CurrentUser() user: any) { const doc = await this.prisma.knowledgeDocument.create({ data: { title: body.title, content: body.content, source: body.source ?? 'admin' } }); await this.audit(user.id, 'CREATE', 'KnowledgeDocument', doc.id); return doc; }
   @Get('audit-logs') logs() { return this.prisma.auditLog.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }); }
   private audit(actorUserId: string, action: string, entity: string, entityId: string, metadata?: any) { return this.prisma.auditLog.create({ data: { actorUserId, action, entity, entityId, metadata } }); }
 }
