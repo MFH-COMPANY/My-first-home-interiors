@@ -16,4 +16,9 @@ describe('UploadsService', () => {
     expect(send).toHaveBeenCalledWith(expect.objectContaining({ input: expect.objectContaining({ Key: expect.stringMatching(/^private\/user-1\//), Bucket: 'private' }) }));
     expect(create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ userId: 'user-1' }) }));
   });
+
+  it('does not disclose another customer upload', async () => {
+    const service = new UploadsService(config, { roomUpload: { findFirst: jest.fn().mockResolvedValue(null) } } as any);
+    await expect(service.getPrivateRoomUpload('user-1', 'upload-owned-by-user-2')).rejects.toBeInstanceOf(BadRequestException);
+  });
 });

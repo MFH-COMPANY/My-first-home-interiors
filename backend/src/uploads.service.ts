@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { PrismaService } from './prisma.service';
 import { randomUUID } from 'crypto';
 
@@ -24,5 +25,12 @@ export class UploadsService {
     const url = base ? `${base.replace(/\/$/, '')}/${key}` : key;
     if (entity === 'project') return this.prisma.projectMedia.create({ data: { projectId: entityId, kind: kind || (file.mimetype.startsWith('video/') ? 'VIDEO' : 'IMAGE'), url, storageKey: key, altText: file.originalname } });
     return this.prisma.catalogueProductImage.create({ data: { productId: entityId, url, altText: file.originalname } });
+  }
+
+  async getPrivateRoomUpload(userId: string, uploadId: string) {
+    const upload = await this.prisma.roomUpload.findFirst({ where: { id: uploadId, userId } });
+    if (!upload) throw new BadRequestException('Upload not found');
+    const url = await getSignedUrl(this.client, new GetObjectCommand({ Bucket: this.config.getOrThrow('R2_BUCKET'), Key: upload.storageKey }), { expiresIn: 300 });
+    return { id: upload.id, mimeType: upload.mimeType, byteSize: upload.byteSize, expiresIn: 300, url };
   }
 }

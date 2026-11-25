@@ -118,6 +118,7 @@ model Project {
   media ProjectMedia[]
   services Service[]
   bookings ConsultationBooking[]
+  testimonials Testimonial[]
   @@index([status, propertyType])
   @@index([designStyle])
   @@index([location])
@@ -192,6 +193,18 @@ model PricingPackage {
   currency String @default("INR")
   status PublicationStatus @default(PUBLISHED)
   createdAt DateTime @default(now())
+}
+model Testimonial {
+  id String @id @default(cuid())
+  customerName String
+  quote String
+  projectId String?
+  rating Int?
+  status PublicationStatus @default(DRAFT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  @@index([status, createdAt])
 }
 model Enquiry {
   id String @id @default(cuid())

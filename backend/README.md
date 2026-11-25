@@ -18,10 +18,9 @@ NestJS + Prisma + PostgreSQL backend for the existing Vite frontend.
 2. Copy `.env.example` to `.env` and provide real secrets and R2 credentials.
 3. Install dependencies: `npm install`.
 4. Generate Prisma client: `npm run prisma:generate`.
-5. Create a development migration: `npm run prisma:migrate -- --name init`.
-6. Create/apply the migration against the configured development database: `npm run prisma:migrate -- --name init`.
-7. Seed the catalogue: `npm run prisma:seed`.
-8. Start the API: `npm run start:dev`.
+5. Apply committed migrations: `npm run prisma:deploy` (or create a new development migration with `npx prisma migrate dev --name describe-change`).
+6. Seed the catalogue: `npm run prisma:seed`.
+7. Start the API: `npm run start:dev`.
 
 The API is served under `/api` and defaults to port `4000`.
 
@@ -41,6 +40,7 @@ The API is served under `/api` and defaults to port `4000`.
 - `GET /api/bookings` and `PATCH /api/bookings/:id/status` (ADMIN)
 - `PATCH /api/bookings/:id/reschedule` (ADMIN)
 - `POST /api/uploads/room` (Bearer token, multipart field `file`, required `consentAt`)
+- `GET /api/uploads/room/:id` (Bearer token; returns a five-minute private signed URL after ownership validation)
 - `GET /api/catalogue/categories`
 - `GET /api/catalogue/products`
 - `GET /api/admin/overview` (ADMIN)
