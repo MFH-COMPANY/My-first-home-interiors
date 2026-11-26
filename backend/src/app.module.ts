@@ -17,6 +17,7 @@ import { AdminWorkflowsController } from './admin-workflows.controller';
 import { ChatController } from './chat.controller';
 import { KnowledgeController } from './knowledge.controller';
 import { AiService } from './ai.service';
+import { CustomerController } from './customer.controller';
 
-@Module({ imports:[ConfigModule.forRoot({isGlobal:true}), ThrottlerModule.forRoot([{ttl:60000,limit:100}]), JwtModule.registerAsync({global:true,inject:[ConfigService],useFactory:(config:ConfigService)=>({secret:config.getOrThrow('JWT_SECRET'),signOptions:{expiresIn:config.get('JWT_EXPIRES_IN','15m')}})})], controllers:[AuthController,ProjectsController,EnquiriesController,UploadsController,AdminController,CatalogueController,BookingsController,AdminWorkflowsController,ChatController,KnowledgeController], providers:[PrismaService,UploadsService,RolesGuard,AiService,{ provide: APP_GUARD, useClass: ThrottlerGuard }] })
+@Module({ imports:[ConfigModule.forRoot({isGlobal:true}), ThrottlerModule.forRoot([{ttl:60000,limit:100}]), JwtModule.registerAsync({global:true,inject:[ConfigService],useFactory:(config:ConfigService)=>({secret:config.getOrThrow('JWT_SECRET'),signOptions:{expiresIn:config.get('JWT_EXPIRES_IN','15m')}})})], controllers:[AuthController,ProjectsController,EnquiriesController,UploadsController,BookingsController,CustomerController,AdminController,CatalogueController,AdminWorkflowsController,ChatController,KnowledgeController], providers:[PrismaService,UploadsService,RolesGuard,AiService,{ provide: APP_GUARD, useClass: ThrottlerGuard }] })
 export class AppModule {}

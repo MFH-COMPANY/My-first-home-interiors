@@ -57,6 +57,8 @@ model User {
   chatSessions ChatSession[]
   roomUploads RoomUpload[]
   savedDesigns SavedDesign[]
+  modifications DesignModification[]
+  deletionRequest AccountDeletionRequest?
   @@index([role])
 }
 model CustomerProfile {
@@ -236,6 +238,15 @@ model ConsultationBooking {
   propertyType String?
   location String?
   notes String?
+  internalNotes String?
+  selectedDesignId String?
+  originalRoomUploadId String?
+  aiConcept String?
+  catalogueRecommendations Json?
+  customerPreferences String?
+  budgetInfo String?
+  chatSummary String?
+  consentAt DateTime?
   status BookingStatus @default(REQUESTED)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -310,6 +321,7 @@ model GeneratedDesign {
   generation DesignGeneration @relation(fields: [generationId], references: [id], onDelete: Cascade)
   products DesignProduct[]
   savedBy SavedDesign[]
+  modifications DesignModification[]
 }
 model DesignProduct {
   designId String
@@ -326,6 +338,27 @@ model SavedDesign {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   design GeneratedDesign @relation(fields: [designId], references: [id], onDelete: Cascade)
   @@unique([userId, designId])
+}
+
+model DesignModification {
+  id String @id @default(cuid())
+  userId String
+  designId String
+  changes Json
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  design GeneratedDesign @relation(fields: [designId], references: [id], onDelete: Cascade)
+  @@index([userId, createdAt])
+}
+
+model AccountDeletionRequest {
+  id String @id @default(cuid())
+  userId String @unique
+  reason String?
+  status String @default("REQUESTED")
+  requestedAt DateTime @default(now())
+  processedAt DateTime?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 model KnowledgeDocument {
   id String @id @default(cuid())
